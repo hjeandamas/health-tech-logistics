@@ -1,6 +1,6 @@
-#Prepared:Jean Damascene HAGENIMANA
-#Email:hjeandamas@gmail.com
-#Tel:0788284928
+# **Prepared: Jean Damascene HAGENIMANA**
+# *Email: hjeandamas@gmail.com*
+# *Tel: 0788284928*
 
 # Health-Tech Logistics: End-to-End Supply Chain Analytics Pipeline
 
@@ -122,13 +122,13 @@ Before transformation, I performed exploratory checks on the extracted Airtable 
 
 ### Key issues identified
 1. **Missing values**  
-   Important fields such as delivery dates and freight costs contained missing values that would affect delivery-performance and cost analysis.
+   Important fields such as delivery dates, freight costs, and shipment weight contained missing values that would affect delivery-performance and cost analysis.
 
 2. **Outliers**  
    Freight cost and shipment weight showed extreme values that could distort averages and comparative metrics.
 
 3. **Inconsistent categorical values**  
-   Shipment mode values were not consistently formatted and required standardization.
+   Shipment mode values required standardization to ensure consistent grouping and reporting.
 
 4. **Invalid values for calculations**  
    Some records had missing, zero, or unusable numeric values in fields needed for cost-per-kilogram calculations.
@@ -144,13 +144,21 @@ I cleaned and enriched the dataset to make it analysis-ready.
 - standardized `Shipment Mode`
 - converted `Freight Cost (USD)`, `Weight (Kilograms)`, and `Line Item Value` to numeric fields
 - parsed `Scheduled Delivery Date` and `Delivered to Client Date`
-- removed records missing critical analytical fields
+- created an analytical subset by removing rows missing the fields required for the dashboard metrics: `Freight Cost (USD)`, `Weight (Kilograms)`, and `Delivered to Client Date`
+
+### Important note on Shipment Mode in the dashboard
+The raw dataset contained more than one shipment mode. However, the dashboard was built on the cleaned analytical dataset after applying completeness filters to ensure that cost and delivery metrics were calculated on valid records only.
+
+As a result, some shipment-mode categories present in the raw data did not remain in the final dashboard dataset because they had missing values in one or more required fields. In this subset, the remaining records that satisfied the analytical criteria were all labeled **Air**. Therefore, the dashboard showing only **Air** under `Shipment Mode` reflects the effect of data-quality filtering, **not** a manual exclusion of other shipment modes such as `Truck`.
 
 ### Derived features
 - **Cost per KG** = `Freight Cost (USD)` / `Weight (Kilograms)`
 - **Delivery Status** = `On-Time` if actual delivery date is on or before scheduled delivery date, otherwise `Late`
 
 These engineered fields are central to the business narrative because they translate raw shipment logs into indicators of **cost efficiency** and **service reliability**.
+
+### Analytical implication
+This cleaning choice improved metric reliability for the challenge dashboard, but it also narrowed the shipment-mode comparison in the final visualization. In a production setting, I would preserve a broader mode-complete dataset for descriptive shipment-mode analysis and use a stricter subset only for metrics that require complete freight and weight information.
 
 ---
 
@@ -186,7 +194,7 @@ This view highlights geographies where average freight cost is materially higher
 This chart shows delivery consistency over time and helps identify volatility, delays, or possible bottlenecks in the logistics process.
 
 ### 4) Cost per KG by Shipment Mode
-This view supports cost optimization by comparing shipment modes on a normalized basis. It helps determine whether expensive shipment options are being used appropriately.
+This view was designed to support cost optimization by comparing shipment modes on a normalized basis. In the current challenge dataset, only **Air** appears in the final dashboard because the cleaned analytical dataset retained only records with complete freight, weight, and delivery information. Other shipment modes existed in the raw data but were excluded by data-completeness filtering rather than by manual selection.
 
 ---
 
@@ -202,7 +210,7 @@ A key analytical hypothesis in this project is:
 
 > Air shipments are less cost-effective than lower-cost transport modes for heavier loads, even when they may provide better speed or service reliability.
 
-The dashboard was structured to provide evidence relevant to this hypothesis.
+The dashboard was structured to provide evidence relevant to this hypothesis, while also acknowledging that the current analytical subset limits direct mode-to-mode comparison.
 
 ---
 
@@ -274,6 +282,7 @@ Connect Preset / Superset to the hosted PostgreSQL table and create the dashboar
 - Business-oriented dashboard narrative
 - Use of both local and hosted storage layers
 - Feature engineering directly tied to delivery efficiency and cost analysis
+- Transparent documentation of how cleaning decisions affect analytical outputs
 
 ---
 
@@ -283,11 +292,13 @@ Connect Preset / Superset to the hosted PostgreSQL table and create the dashboar
 - Rate-limit handling is intentionally simple and could be extended with robust retry logic
 - Validation rules can be expanded further for enterprise-grade pipelines
 - The workflow would benefit from parameterization and orchestration for repeat runs
+- The current dashboard subset is stricter than the raw dataset and therefore does not preserve all shipment modes for comparison
 
 ### Recommended next steps
 - package the workflow into reusable modular scripts
 - add structured logging and audit tables
 - implement schema tests and deduplication checks
+- create separate analytical layers for completeness-sensitive metrics versus broader descriptive reporting
 - extend the dashboard with SLA compliance, route-level analysis, and vendor performance metrics
 
 ---
